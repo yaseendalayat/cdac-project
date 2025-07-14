@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        .chat-header {
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .chat-body {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .message {
+            max-width: 85%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: #fff;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #314755 0%, #26a0da 100%);
+            color: #fff;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .chat-footer {
+            padding: 24px 32px;
+            background: rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 16px;
+            position: sticky;
+            bottom: 0;
+        }
+        
+        .chat-footer input[type="text"] {
+            flex: 1;
+            padding: 16px 24px;
+            border-radius: 30px;
+            border: none;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-footer input[type="text"]:focus {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .chat-footer button {
+            padding: 16px 32px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chat-footer button:hover {
+            transform: translateY(-2px);
+        }
+        
+        ::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Scrollbar Styling */
+        .chat-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-body::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .chat-body::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        
+        .chat-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Loading animation */
+        .typing-indicator {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingAnimation {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AI Assistant</h1>
+        </div>
+        <div class="chat-body" id="chat-body">
+            {% if user_message %}
+                <div class="message user-message">{{ user_message }}</div>
+            {% endif %}
+            {% if chatbot_response %}
+                <div class="message bot-message">{{ chatbot_response }}</div>
+            {% else %}
+                <div class="message bot-message">Hi! I'm your AI assistant. How can I help you today?</div>
+            {% endif %}
+        </div>
+        <form class="chat-footer" action="/get_response" method="post" autocomplete="off" id="chat-form">
+            <input type="text" name="user_message" id="user_message" placeholder="Type your message..." required autofocus>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+    <script>
+        const chatBody = document.getElementById('chat-body');
+        const chatForm = document.getElementById('chat-form');
+        
+        // Auto-scroll to bottom
+        function scrollToBottom() {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+        
+        scrollToBottom();
+        
+        // Add loading animation while waiting for response
+        chatForm.addEventListener('submit', function(e) {
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'typing-indicator';
+            loadingIndicator.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            chatBody.appendChild(loadingIndicator);
+            scrollToBottom();
+            
+            // Autofocus input after submit
+            setTimeout(() => {
+                document.getElementById('user_message').focus();
+            }, 100);
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', scrollToBottom);
+    </script>
+</body>
+</html>
